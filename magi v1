@@ -1,0 +1,3851 @@
+# MASTER MAGI: Comprehensive Technical Breakdown
+# PRIVATE & CONFIDENTIAL
+
+This document provides a complete technical breakdown of the MAGI (Memory Augmented Generative Intelligence) codebase, encompassing all components, implementations, and technical details. This serves as the definitive technical reference for the entire system.
+
+## Table of Contents
+
+1. [System Overview](#system-overview)
+2. [Core Architecture](#core-architecture)
+3. [Component Documentation](#component-documentation)
+4. [Code Implementation Details](#code-implementation-details)
+5. [Data Flow & Processing](#data-flow--processing)
+6. [API Specifications](#api-specifications)
+7. [Integration Points](#integration-points)
+8. [Testing Framework](#testing-framework)
+9. [Deployment & Configuration](#deployment--configuration)
+10. [Future Development](#future-development)
+
+## System Overview
+
+### MAGI System Definition
+
+MAGI (Memory Augmented Generative Intelligence) is a knowledge management and AI assistance system that combines vector databases, semantic search, retrieval augmented generation (RAG), and large language models to create a system with contextual memory and knowledge synthesis capabilities.
+
+### Core Capabilities
+
+1. **Semantic Knowledge Storage**
+   - Vector-based storage of conversations, messages, and knowledge items
+   - Cross-referenced information architecture using Weaviate
+   - Semantic similarity search for contextually relevant information retrieval
+   - Persistent storage with file system backup and vector database primary storage
+
+2. **Retrieval Augmented Generation (RAG)**
+   - Context-aware prompt enhancement using semantic search
+   - Multi-stage retrieval pipeline with relevance filtering
+   - Dynamic context window management
+   - Response generation with contextual awareness
+
+3. **Knowledge Synthesis**
+   - Automatic topic extraction from conversations
+   - Knowledge consolidation across multiple sources
+   - Topic relationship mapping via knowledge graph
+   - Temporal knowledge tracking with version history
+
+4. **User Interaction Interfaces**
+   - Interactive chat interface with context visibility
+   - Memory exploration UI for browsing knowledge
+   - Command-line tools for advanced operations
+   - Ghost CMS integration for website embedding
+
+### Technology Stack
+
+| Component | Technologies |
+|-----------|-------------|
+| Backend | Node.js, Express.js |
+| Vector Database | Weaviate |
+| Embeddings | OpenAI Embeddings API, Local Embeddings |
+| LLM | Claude Code, Anthropic Claude API |
+| Web Interface | HTML, CSS, JavaScript |
+| Storage | JSON, File System, Vector DB |
+| Testing | Jest |
+| Deployment | Docker, Docker Compose |
+
+### Directory Structure
+
+The MAGI system is organized hierarchically with the following top-level directories:
+
+```
+magi/
+├── src/                 # Source code (organized components)
+│   ├── core/            # Core system components
+│   │   ├── memory/      # Memory system implementation
+│   │   ├── rag/         # RAG engine implementation
+│   │   ├── api/         # API server implementation
+│   │   ├── claude/      # Claude integration
+│   │   └── knowledge/   # Knowledge processing
+│   ├── utils/           # Utility functions
+│   ├── tools/           # CLI tools
+│   └── scripts/         # Setup scripts
+├── client/              # Client-side UI code
+│   ├── components/      # UI components
+│   ├── scripts/         # Client-side JavaScript
+│   └── styles/          # CSS stylesheets
+├── docs/                # Documentation
+│   ├── api/             # API documentation
+│   ├── architecture/    # Architecture documentation
+│   ├── development/     # Development guides
+│   └── user/            # User guides
+├── data/                # Data samples and schemas
+│   ├── filesystem/      # Filesystem data storage
+│   ├── models/          # Data models
+│   └── weaviate/        # Weaviate integration
+├── tests/               # Testing framework
+│   ├── unit/            # Unit tests
+│   ├── integration/     # Integration tests
+│   └── fixtures/        # Test fixtures
+├── archive/             # Archived/legacy code
+├── weaviate-data/       # Database storage
+└── magi_v2/             # Version 2 planning and implementation
+    └── cryptobot/       # Cryptocurrency analysis module
+```
+
+### System Requirements
+
+**Production Environment:**
+- Node.js v14+ (v16+ recommended)
+- Docker and Docker Compose
+- 4GB+ RAM for Weaviate
+- 2GB+ RAM for Node.js processes
+- 10GB+ storage for knowledge base
+- Internet access for external APIs
+
+**Development Environment:**
+- Node.js v14+ (v16+ recommended)
+- Docker and Docker Compose
+- Git
+- NPM or Yarn
+- Text editor/IDE with JavaScript support
+- 8GB+ RAM recommended
+
+### Licensing & Permissions
+
+MAGI is released under the ISC license, which permits free use, modification, and distribution with attribution.
+
+## Core Architecture
+
+### Architectural Principles
+
+MAGI follows these key architectural principles:
+
+1. **Modular Design**: Components are loosely coupled and independently maintainable
+2. **Separation of Concerns**: Clear boundaries between data storage, processing, and presentation
+3. **Extensibility**: Designed for easy addition of new capabilities and modules
+4. **Scalability**: Key components can be scaled independently
+5. **Resilience**: Fallback mechanisms and error handling throughout the system
+6. **Observable**: Logging and monitoring built into core components
+
+### High-Level Architecture Diagram
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│                       MAGI System                              │
+│                                                               │
+│  ┌─────────────┐    ┌─────────────┐    ┌───────────────────┐  │
+│  │             │    │             │    │                   │  │
+│  │  Memory     │◄───┤  RAG        │◄───┤   API Layer       │  │
+│  │  System     │    │  Engine     │    │                   │  │
+│  │             │    │             │    │                   │  │
+│  └─────┬───────┘    └──────┬──────┘    └─────────┬─────────┘  │
+│        │                   │                     │            │
+│        │                   │                     │            │
+│        ▼                   ▼                     ▼            │
+│  ┌─────────────────────────────────────────────────────────┐  │
+│  │                                                         │  │
+│  │                     Web Interface                       │  │
+│  │                                                         │  │
+│  └─────────────────────────────────────────────────────────┘  │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
+```
+
+### Detailed Component Architecture
+
+#### Memory System Architecture
+
+The Memory System is responsible for storing, indexing, and retrieving information:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   Memory System                      │
+│                                                     │
+│  ┌─────────────┐   ┌─────────────┐   ┌───────────┐  │
+│  │             │   │             │   │           │  │
+│  │ Filesystem  │◄─►│   Vector    │◄─►│ Knowledge │  │
+│  │  Storage    │   │  Database   │   │   Graph   │  │
+│  │             │   │             │   │           │  │
+│  └─────────────┘   └─────────────┘   └───────────┘  │
+│         ▲                 ▲                ▲        │
+│         │                 │                │        │
+│         ▼                 ▼                ▼        │
+│  ┌─────────────────────────────────────────────┐    │
+│  │                                             │    │
+│  │            Memory Interface Layer           │    │
+│  │                                             │    │
+│  └─────────────────────────────────────────────┘    │
+│                        ▲                            │
+└────────────────────────┼────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│                  Memory Consumers                   │
+│  (RAG Engine, API Layer, Knowledge Synthesizer)     │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+Key components:
+- **Filesystem Storage**: JSON-based persistent storage
+- **Vector Database**: Weaviate for semantic search
+- **Knowledge Graph**: Topic relationships and connections
+- **Memory Interface Layer**: Unified API for memory operations
+
+#### RAG Engine Architecture
+
+The RAG (Retrieval Augmented Generation) Engine enhances AI prompts with relevant context:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    RAG Engine                        │
+│                                                     │
+│  ┌─────────────┐   ┌─────────────┐   ┌───────────┐  │
+│  │             │   │             │   │           │  │
+│  │   Query     │──►│  Context    │──►│  Prompt   │  │
+│  │  Processor  │   │  Retriever  │   │  Enhancer │  │
+│  │             │   │             │   │           │  │
+│  └─────────────┘   └─────────────┘   └───────────┘  │
+│                           │                │        │
+│                           ▼                ▼        │
+│                    ┌─────────────┐   ┌───────────┐  │
+│                    │             │   │           │  │
+│                    │  Response   │◄──┤  Claude   │  │
+│                    │  Processor  │   │ Interface │  │
+│                    │             │   │           │  │
+│                    └─────────────┘   └───────────┘  │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+Key components:
+- **Query Processor**: Analyzes and processes user queries
+- **Context Retriever**: Finds relevant information from memory
+- **Prompt Enhancer**: Combines query with retrieved context
+- **Claude Interface**: Communicates with Claude API
+- **Response Processor**: Post-processes AI responses
+
+#### API Layer Architecture
+
+The API Layer provides interfaces for client applications:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    API Layer                         │
+│                                                     │
+│  ┌─────────────┐   ┌─────────────┐   ┌───────────┐  │
+│  │             │   │             │   │           │  │
+│  │   Request   │──►│  Route      │──►│ Controller│  │
+│  │  Handler    │   │  Handler    │   │           │  │
+│  │             │   │             │   │           │  │
+│  └─────────────┘   └─────────────┘   └───────────┘  │
+│         │                                 │         │
+│         ▼                                 ▼         │
+│  ┌─────────────┐                  ┌─────────────┐   │
+│  │             │                  │             │   │
+│  │ Middleware  │                  │  Response   │   │
+│  │             │                  │  Formatter  │   │
+│  │             │                  │             │   │
+│  └─────────────┘                  └─────────────┘   │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+Key components:
+- **Request Handler**: Processes incoming HTTP requests
+- **Route Handler**: Routes requests to appropriate controllers
+- **Controller**: Business logic implementation
+- **Middleware**: Authentication, logging, error handling
+- **Response Formatter**: Standardizes API responses
+
+#### Web Interface Architecture
+
+The Web Interface provides user interaction capabilities:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  Web Interface                       │
+│                                                     │
+│  ┌─────────────┐   ┌─────────────┐   ┌───────────┐  │
+│  │             │   │             │   │           │  │
+│  │   Chat      │   │  Memory     │   │ Settings  │  │
+│  │  Interface  │   │  Explorer   │   │ Interface │  │
+│  │             │   │             │   │           │  │
+│  └─────────────┘   └─────────────┘   └───────────┘  │
+│         │                 │                │        │
+│         ▼                 ▼                ▼        │
+│  ┌─────────────────────────────────────────────┐    │
+│  │                                             │    │
+│  │            API Client Layer                 │    │
+│  │                                             │    │
+│  └─────────────────────────────────────────────┘    │
+│                        │                            │
+└────────────────────────┼────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│                    API Layer                        │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+Key components:
+- **Chat Interface**: Interactive message exchange
+- **Memory Explorer**: Knowledge browsing and visualization
+- **Settings Interface**: User preferences and configuration
+- **API Client Layer**: Communicates with backend API
+
+### Key Implementation Files
+
+| Component | Path | Description |
+|-----------|------|-------------|
+| Memory System | `/src/core/memory-system.js` | Core memory system implementation |
+| RAG Engine | `/src/core/enhanced-rag.js` | RAG implementation |
+| API Server | `/src/core/api-server.js` | Express.js API server |
+| Chat Client | `/client/chat.html`, `/client/script.js` | Chat interface |
+| Memory Explorer | `/client/memory-explorer.html` | Memory visualization |
+| Knowledge Graph | `/src/core/knowledge-graph.js` | Topic relationship management |
+| Vector Search | `/src/utils/vector-search.js` | Semantic search utilities |
+| Configuration | `/src/core/config.js` | System configuration |
+
+### Data Models
+
+#### Conversation Model
+
+```javascript
+{
+  id: String,               // Unique identifier
+  title: String,            // Conversation title
+  description: String,      // Optional description
+  created: ISO8601 String,  // Creation timestamp
+  updated: ISO8601 String,  // Last update timestamp
+  messages: [               // Array of messages
+    {
+      id: String,           // Message identifier
+      role: String,         // "user" or "assistant"
+      content: String,      // Message text content
+      timestamp: ISO8601 String, // Message timestamp
+      metadata: Object      // Optional metadata
+    }
+  ],
+  topics: [String],         // Associated topics
+  metadata: Object          // Additional metadata
+}
+```
+
+#### Topic Model
+
+```javascript
+{
+  id: String,               // Unique identifier
+  name: String,             // Topic name
+  description: String,      // Topic description
+  content: String,          // Comprehensive content
+  created: ISO8601 String,  // Creation timestamp
+  updated: ISO8601 String,  // Last update timestamp
+  sources: [                // Source references
+    {
+      type: String,         // "conversation", "message", etc.
+      id: String,           // Source identifier
+      excerpt: String       // Relevant excerpt
+    }
+  ],
+  related: [                // Related topics
+    {
+      id: String,           // Topic identifier
+      strength: Number,     // Relationship strength (0-1)
+      type: String          // Relationship type
+    }
+  ],
+  metadata: Object          // Additional metadata
+}
+```
+
+### Interfaces & Protocols
+
+#### API Protocol
+
+The API uses HTTP/JSON with the following conventions:
+
+- Authentication: API key or session token
+- Content-Type: application/json
+- Error responses: HTTP status codes with JSON error details
+- Versioning: URL path versioning (e.g., /api/v1/)
+- Rate limiting: Based on API key or IP address
+
+#### Internal Component Communication
+
+Components communicate through:
+
+- Direct function calls (in-process)
+- Event emitters for asynchronous operations
+- Promise-based interfaces for asynchronous operations
+- Structured data objects for complex data exchange
+
+#### External API Integration
+
+External APIs are integrated through:
+
+- Adapter pattern for API-specific implementations
+- Standardized error handling and retry logic
+- Rate limit management and request throttling
+- Configurable authentication and endpoints
+
+## Component Documentation
+
+This section provides detailed documentation for each major component of the MAGI system.
+
+### Memory System
+
+#### Overview
+
+The Memory System is the foundation of MAGI, responsible for storing, organizing, and retrieving information. It combines file system storage with vector database capabilities to provide both semantic search and traditional data retrieval.
+
+#### Key Files
+
+| File | Description |
+|------|-------------|
+| `/src/core/memory-system.js` | Main memory system implementation |
+| `/src/core/memory/index.js` | Entry point for memory module |
+| `/src/core/memory/storage.js` | Storage interface implementation |
+| `/src/core/memory/retrieval.js` | Retrieval mechanisms |
+| `/src/core/memory/management.js` | Memory management utilities |
+| `/memory/knowledge-graph.json` | Knowledge graph data storage |
+
+#### Core Functions
+
+```javascript
+// Initialize the memory system
+async function initialize(config)
+
+// Store data in memory
+async function storeData(key, data)
+
+// Retrieve data from memory
+async function retrieveData(key)
+
+// Search memory semantically
+async function semanticSearch(query, options)
+
+// List all conversations in memory
+async function listConversations()
+
+// Get a specific conversation by ID
+async function getConversation(id)
+
+// Store a conversation in memory
+async function storeConversation(conversation)
+
+// Generate topic from conversations
+async function generateTopic(topicName, options)
+
+// Get a specific topic by ID
+async function getTopic(id)
+
+// List all topics in memory
+async function listTopics()
+
+// Get related topics for a topic
+async function getRelatedTopics(topicId)
+```
+
+#### Data Flow
+
+1. **Storage Flow**:
+   - Memory system receives data to store
+   - Data is validated against schema
+   - File system storage is updated
+   - Vector database is updated with embeddings
+   - Knowledge graph is updated if needed
+
+2. **Retrieval Flow**:
+   - Memory system receives retrieval request
+   - Appropriate storage backend is determined
+   - Data is retrieved and formatted
+   - Cross-references are resolved as needed
+   - Complete data is returned
+
+3. **Search Flow**:
+   - Query is received and normalized
+   - Vector embedding is generated for query
+   - Vector database is searched
+   - Results are filtered and ranked
+   - Results are formatted and returned
+
+#### Configuration Options
+
+```javascript
+{
+  // File system configuration
+  filesystem: {
+    basePath: "./memory",  // Base path for file storage
+    conversationDir: "conversations",  // Conversation directory
+    topicDir: "topics"  // Topic directory
+  },
+  
+  // Vector database configuration
+  vectorDb: {
+    url: "http://localhost:8080",  // Weaviate URL
+    apiKey: null,  // Optional API key
+    scheme: "http",  // Connection scheme
+    batchSize: 100  // Batch size for operations
+  },
+  
+  // Embedding configuration
+  embedding: {
+    provider: "openai",  // Embedding provider
+    apiKey: process.env.OPENAI_API_KEY,  // API key
+    model: "text-embedding-ada-002",  // Embedding model
+    dimensions: 1536  // Embedding dimensions
+  }
+}
+```
+
+#### Error Handling
+
+The memory system implements comprehensive error handling:
+
+- **Storage errors**: Failed writes are retried with exponential backoff
+- **Retrieval errors**: Multiple retrieval paths with fallback mechanisms
+- **Database errors**: Connection retry logic with circuit breaker pattern
+- **API errors**: Graceful degradation to local functionality when external APIs fail
+
+#### Integration Points
+
+- **RAG Engine**: Provides context for prompt enhancement
+- **API Layer**: Exposes memory operations through REST endpoints
+- **Knowledge Synthesizer**: Enables knowledge extraction and organization
+- **Memory Explorer**: Supplies data for visualization and navigation
+
+### RAG (Retrieval Augmented Generation) Engine
+
+#### Overview
+
+The RAG Engine enhances AI interactions by retrieving relevant context from the memory system and incorporating it into prompts for the AI model.
+
+#### Key Files
+
+| File | Description |
+|------|-------------|
+| `/src/core/enhanced-rag.js` | Main RAG implementation |
+| `/src/core/rag/index.js` | Entry point for RAG module |
+| `/src/core/rag/context.js` | Context management |
+| `/src/core/rag/enhancer.js` | Prompt enhancement |
+| `/src/core/rag/synthesis.js` | Knowledge synthesis |
+
+#### Core Functions
+
+```javascript
+// Initialize the RAG engine
+async function initialize(config)
+
+// Enhance a prompt with relevant context
+async function enhancePrompt(query, options)
+
+// Process a complete conversation with RAG
+async function processConversationWithRAG(messages, options)
+
+// Synthesize knowledge on a topic
+async function synthesizeKnowledge(topic, options)
+
+// Extract topics from content
+async function extractTopics(content)
+
+// Register a context provider
+function registerContextProvider(name, providerFunction)
+
+// Get context for a query
+async function getContextForQuery(query, options)
+```
+
+#### Prompt Templates
+
+The RAG engine uses configurable prompt templates:
+
+```javascript
+// Enhanced RAG prompt template
+const ENHANCED_PROMPT_TEMPLATE = `
+I'll provide some context information that might be helpful for answering the user's question. Please use this information along with your own knowledge to give the best possible answer.
+
+CONTEXT:
+{context}
+
+USER QUESTION:
+{query}
+`;
+
+// Knowledge synthesis prompt template
+const KNOWLEDGE_SYNTHESIS_TEMPLATE = `
+I'll provide you with various information about the topic "{topic}". Please synthesize this information into a comprehensive and coherent document about the topic.
+
+INFORMATION:
+{context}
+
+Please organize your synthesis with clear sections covering the main aspects of {topic}. Include proper citations to the sources mentioned in the information where relevant.
+`;
+
+// Topic extraction prompt template
+const TOPIC_EXTRACTION_TEMPLATE = `
+Please analyze the following conversation and identify the main topics discussed. For each topic, provide:
+1. A concise topic name
+2. A brief description of what the topic covers
+3. Key points or insights about the topic from the conversation
+
+CONVERSATION:
+{conversation}
+
+Please format your response as a JSON array of topic objects with "name", "description", and "keyPoints" properties.
+`;
+```
+
+#### Context Retrieval Strategy
+
+The RAG engine follows a multi-stage context retrieval process:
+
+1. **Query Analysis**:
+   - Extract key terms and concepts
+   - Determine topic domains
+   - Generate search vectors
+
+2. **Broad Retrieval**:
+   - Search across memory sources
+   - Retrieve top N results (configurable)
+   - Collect diverse context types
+
+3. **Context Selection**:
+   - Filter results by relevance score
+   - Deduplicate similar information
+   - Prioritize authoritative sources
+
+4. **Context Assembly**:
+   - Order context by relevance
+   - Format according to prompt template
+   - Ensure context fits within token limits
+
+#### Configuration Options
+
+```javascript
+{
+  // Context retrieval configuration
+  context: {
+    maxResults: 10,            // Maximum number of results to retrieve
+    relevanceThreshold: 0.75,  // Minimum relevance score (0-1)
+    maxContextLength: 3000,    // Maximum context length in tokens
+    diversityWeight: 0.3       // Weight for result diversity (0-1)
+  },
+  
+  // Prompt enhancement configuration
+  prompts: {
+    enhancedTemplate: ENHANCED_PROMPT_TEMPLATE,  // Template for enhanced prompts
+    synthesisTemplate: KNOWLEDGE_SYNTHESIS_TEMPLATE,  // Template for knowledge synthesis
+    topicExtractionTemplate: TOPIC_EXTRACTION_TEMPLATE  // Template for topic extraction
+  },
+  
+  // LLM configuration
+  llm: {
+    provider: "claude",  // LLM provider
+    model: "claude-2.0",  // Model name
+    temperature: 0.7,     // Temperature for generation
+    maxTokens: 1500       // Maximum tokens for generation
+  }
+}
+```
+
+#### Integration Points
+
+- **Memory System**: Source of context information
+- **Claude Interface**: Target for enhanced prompts
+- **API Layer**: Exposes RAG operations through REST endpoints
+- **Knowledge Graph**: Updates with newly synthesized knowledge
+
+### Knowledge Management
+
+#### Overview
+
+The Knowledge Management components handle the extraction, organization, and maintenance of knowledge within the MAGI system.
+
+#### Key Components
+
+1. **Knowledge Synthesizer**:
+   - Extracts knowledge from conversations
+   - Generates comprehensive topic documents
+   - Identifies relationships between topics
+   - Maintains knowledge versioning
+
+2. **Knowledge Graph**:
+   - Stores topic relationships
+   - Calculates relationship strength
+   - Provides navigation capabilities
+   - Identifies knowledge clusters
+
+#### Key Files
+
+| File | Description |
+|------|-------------|
+| `/src/core/knowledge-synthesizer.js` | Knowledge synthesis implementation |
+| `/src/core/knowledge-graph.js` | Knowledge graph implementation |
+| `/src/core/knowledge/index.js` | Entry point for knowledge module |
+| `/src/core/knowledge/graph.js` | Graph operations |
+| `/src/core/knowledge/synthesizer.js` | Synthesis operations |
+
+#### Core Functions
+
+```javascript
+// Knowledge Synthesizer functions
+async function synthesizeTopic(topicName, options)
+async function extractTopicsFromConversation(conversationId)
+async function updateTopicWithNewInformation(topicId, newInformation)
+async function generateTopicHierarchy(rootTopicName)
+
+// Knowledge Graph functions
+async function addTopicToGraph(topic)
+async function linkTopics(sourceTopic, targetTopic, strength, type)
+async function findRelatedTopics(topicId, options)
+async function calculateTopicSimilarity(topicA, topicB)
+async function visualizeGraph(options)
+```
+
+#### Knowledge Extraction Process
+
+The knowledge extraction process follows these steps:
+
+1. **Conversation Analysis**:
+   - Process conversation content
+   - Identify potential topics
+   - Extract key information for each topic
+
+2. **Topic Creation**:
+   - Generate topic structure
+   - Synthesize comprehensive content
+   - Create metadata and references
+
+3. **Relationship Identification**:
+   - Calculate topic similarity
+   - Identify explicit references
+   - Detect implicit connections
+   - Establish relationship strength
+
+4. **Knowledge Integration**:
+   - Update knowledge graph
+   - Merge with existing topics if needed
+   - Resolve conflicts in information
+   - Update topic versions
+
+#### Knowledge Graph Structure
+
+The knowledge graph is represented as a directed weighted graph:
+
+```javascript
+{
+  "nodes": [
+    {
+      "id": "topic-1",
+      "name": "Vector Databases",
+      "type": "topic",
+      "metadata": { /* topic metadata */ }
+    },
+    // More topic nodes...
+  ],
+  "edges": [
+    {
+      "source": "topic-1",
+      "target": "topic-2",
+      "weight": 0.85,
+      "type": "related",
+      "metadata": { /* relationship metadata */ }
+    },
+    // More relationship edges...
+  ],
+  "metadata": {
+    "lastUpdated": "2023-09-15T14:22:30Z",
+    "nodeCount": 120,
+    "edgeCount": 345
+  }
+}
+```
+
+#### Integration Points
+
+- **Memory System**: Storage and retrieval of knowledge
+- **RAG Engine**: Knowledge incorporated into context
+- **Web Interface**: Visualization and navigation of knowledge
+- **API Layer**: Exposes knowledge operations through REST endpoints
+
+### Web Interface
+
+#### Overview
+
+The Web Interface provides user interaction with the MAGI system through chat and memory exploration capabilities.
+
+#### Key Components
+
+1. **Chat Interface**:
+   - Message exchange with the AI
+   - Context visualization
+   - Conversation management
+   - Memory integration
+
+2. **Memory Explorer**:
+   - Topic browsing and search
+   - Knowledge visualization
+   - Relationship navigation
+   - Source exploration
+
+3. **Settings Interface**:
+   - User preferences
+   - System configuration
+   - Integration settings
+
+#### Key Files
+
+| File | Description |
+|------|-------------|
+| `/client/chat.html` | Chat interface HTML |
+| `/client/script.js` | Chat interface JavaScript |
+| `/client/styles.css` | Interface styling |
+| `/client/memory-explorer.html` | Memory explorer interface |
+| `/client/memory-explorer.js` | Memory explorer JavaScript |
+| `/client/ghost-integration.js` | Ghost CMS integration |
+
+#### Interface Components
+
+1. **Chat Components**:
+   - Message List: Displays conversation history
+   - Input Area: Text entry for user messages
+   - Context Panel: Shows relevant context for the conversation
+   - Control Panel: Conversation management controls
+
+2. **Memory Explorer Components**:
+   - Topic List: Browsable list of knowledge topics
+   - Search Bar: Search across all memory
+   - Topic Viewer: Displays topic content
+   - Graph Visualization: Shows topic relationships
+   - Source Panel: Displays original sources
+
+#### API Client Implementation
+
+The web interface communicates with the backend through a JavaScript API client:
+
+```javascript
+class MagiApiClient {
+  constructor(baseUrl) {
+    this.baseUrl = baseUrl;
+  }
+  
+  // Chat API methods
+  async sendMessage(message) { /* implementation */ }
+  async getConversation(id) { /* implementation */ }
+  async saveConversation(conversation) { /* implementation */ }
+  
+  // Memory API methods
+  async searchMemory(query, options) { /* implementation */ }
+  async getTopics() { /* implementation */ }
+  async getTopic(id) { /* implementation */ }
+  async getRelatedTopics(id) { /* implementation */ }
+  
+  // Knowledge API methods
+  async synthesizeTopic(topic) { /* implementation */ }
+  async getKnowledgeGraph() { /* implementation */ }
+}
+```
+
+#### Ghost CMS Integration
+
+The Ghost integration provides embedding capabilities:
+
+1. **Script Injection**:
+   ```html
+   <script src="/assets/js/magi-chat.js"></script>
+   ```
+
+2. **Element Embedding**:
+   ```html
+   <div id="magi-chat-container" data-api-url="https://api.example.com"></div>
+   ```
+
+3. **Style Customization**:
+   ```css
+   #magi-chat-container {
+     /* Custom styling */
+   }
+   ```
+
+4. **Configuration Options**:
+   ```javascript
+   window.MAGI_CONFIG = {
+     apiUrl: "https://api.example.com",
+     theme: "light",
+     defaultContext: true,
+     autoSave: false
+   };
+   ```
+
+#### Integration Points
+
+- **API Layer**: Communication with backend services
+- **Memory System**: Visualization of stored knowledge
+- **Ghost CMS**: Website embedding
+
+### API Server
+
+#### Overview
+
+The API Server provides HTTP interfaces for client applications to interact with the MAGI system.
+
+#### Key Files
+
+| File | Description |
+|------|-------------|
+| `/src/core/api-server.js` | Main API server implementation |
+| `/src/api/server.js` | Server configuration |
+| `/src/api/routes/*.js` | API route definitions |
+| `/src/api/controllers/*.js` | Request handling logic |
+| `/src/api/middleware/*.js` | Middleware components |
+
+#### API Endpoints
+
+1. **Chat API**:
+   - `POST /api/chat/message`: Send a message
+   - `GET /api/chat/conversation/:id`: Get conversation
+   - `POST /api/chat/conversation/:id/save`: Save conversation
+
+2. **Memory API**:
+   - `GET /api/memory/search`: Search memory
+   - `GET /api/memory/conversations`: List conversations
+   - `GET /api/memory/topics`: List topics
+   - `GET /api/memory/topics/:id`: Get topic details
+
+3. **Knowledge API**:
+   - `POST /api/knowledge/synthesize`: Synthesize knowledge
+   - `GET /api/knowledge/graph`: Get knowledge graph
+   - `GET /api/knowledge/related/:id`: Get related topics
+
+4. **System API**:
+   - `GET /api/system/status`: Get system status
+   - `GET /api/system/config`: Get public configuration
+
+#### Request Handling Flow
+
+1. **Request Reception**:
+   - API server receives HTTP request
+   - Basic validation and sanitation
+
+2. **Middleware Processing**:
+   - Authentication and authorization
+   - Rate limiting and quota checks
+   - Request logging
+   - Error handling setup
+
+3. **Route Handling**:
+   - Route matching and parameter extraction
+   - Controller method dispatch
+
+4. **Business Logic**:
+   - Controller processes request
+   - Core component interaction
+   - Result preparation
+
+5. **Response Formatting**:
+   - Standard response structure
+   - Error handling
+   - Compression and caching headers
+
+#### API Response Format
+
+All API responses follow a standard format:
+
+```javascript
+{
+  "success": true,          // Boolean success indicator
+  "data": { /* data */ },   // Response data (if success is true)
+  "error": null,            // Error details (if success is false)
+  "meta": {                 // Metadata about the response
+    "timestamp": "2023-09-15T14:30:22Z",
+    "requestId": "req-123",
+    "processingTime": 235,  // Processing time in ms
+    "pagination": {         // Optional pagination info
+      "page": 1,
+      "pageSize": 10,
+      "totalItems": 42,
+      "totalPages": 5
+    }
+  }
+}
+```
+
+#### Error Response Format
+
+Error responses follow this structure:
+
+```javascript
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "The requested resource was not found",
+    "details": {
+      "resourceType": "topic",
+      "resourceId": "missing-topic-id"
+    },
+    "statusCode": 404
+  },
+  "meta": { /* standard metadata */ }
+}
+```
+
+#### Integration Points
+
+- **Memory System**: Data storage and retrieval
+- **RAG Engine**: AI interaction
+- **Web Interface**: Client application communication
+
+### CryptoBot Module
+
+#### Overview
+
+CryptoBot is a specialized module that extends MAGI's capabilities to include cryptocurrency market and social media analysis.
+
+#### Key Components
+
+1. **Market Module**:
+   - Cryptocurrency price data collection
+   - Historical data analysis
+   - Market trend detection
+   - Data visualization
+
+2. **Sentiment Module**:
+   - Social media monitoring (Twitter, Discord)
+   - Sentiment analysis for cryptocurrencies
+   - Topic extraction from discussions
+   - Correlation with market movements
+
+3. **News Module**:
+   - Cryptocurrency news aggregation
+   - Impact assessment
+   - Entity extraction
+   - Relevance scoring
+
+4. **Analysis Engine**:
+   - Cross-source correlation
+   - Pattern detection
+   - Predictive indicators
+   - Anomaly detection
+
+#### Key Files
+
+| File | Description |
+|------|-------------|
+| `/magi_v2/cryptobot/examples/market-module.js` | Example market module implementation |
+| `/magi_v2/cryptobot/examples/sentiment-module.js` | Example sentiment module implementation |
+| `/magi_v2/cryptobot/API_SPECIFICATION.md` | API documentation |
+| `/magi_v2/cryptobot/ARCHITECTURE.md` | Architecture documentation |
+| `/magi_v2/cryptobot/DATA_SOURCES.md` | Data source documentation |
+| `/magi_v2/cryptobot/SOCIAL_MEDIA_STRATEGY.md` | Social media strategy |
+
+#### Integration with MAGI
+
+CryptoBot integrates with the core MAGI system through:
+
+1. **Memory System**:
+   - Stores cryptocurrency data in memory
+   - Creates topics for cryptocurrencies
+   - Links market data with sentiment analysis
+
+2. **RAG Engine**:
+   - Provides cryptocurrency context for queries
+   - Enhances prompts with market and sentiment data
+   - Enables specialized cryptocurrency responses
+
+3. **Web Interface**:
+   - Adds cryptocurrency dashboard components
+   - Provides price and sentiment visualizations
+   - Displays alerts for significant events
+
+#### Data Processing Flow
+
+1. **Data Collection**:
+   - Market data from exchange APIs
+   - Social media content from platform APIs
+   - News from specialized sources
+
+2. **Data Processing**:
+   - Normalization and validation
+   - Feature extraction and analysis
+   - Correlation detection
+   - Summarization and insights generation
+
+3. **Data Storage**:
+   - Tiered storage strategy (hot/warm/cold)
+   - Time-series database for historical data
+   - Vector storage for content analysis
+   - Knowledge graph integration
+
+4. **Data Retrieval**:
+   - Real-time market data access
+   - Historical trend analysis
+   - Sentiment context for cryptocurrencies
+   - News impact assessment
+
+#### Implementation Status
+
+The CryptoBot module is currently in the planning and implementation phase, with completed components including:
+
+- Architecture documentation
+- API specifications
+- Data source documentation
+- Social media strategy
+- Example module implementations
+
+For implementation details, refer to the [CryptoBot Implementation Plan](/magi_v2/cryptobot/IMPLEMENTATION_PLAN.md).
+
+## Code Implementation Details
+
+This section provides detailed information on the implementation of key components, highlighting important code patterns, algorithms, and design decisions.
+
+### Core System Implementation
+
+#### Memory System Implementation
+
+The Memory System is implemented with a modular approach, using adapter patterns to abstract storage backends:
+
+```javascript
+// Memory System core implementation (simplified)
+class MemorySystem {
+  constructor(config) {
+    this.config = config;
+    this.storageAdapters = {
+      filesystem: new FilesystemAdapter(config.filesystem),
+      vector: new VectorDatabaseAdapter(config.vectorDb)
+    };
+    this.embeddingProvider = createEmbeddingProvider(config.embedding);
+    this.initialized = false;
+  }
+  
+  async initialize() {
+    try {
+      // Initialize storage adapters
+      await Promise.all(Object.values(this.storageAdapters).map(
+        adapter => adapter.initialize()
+      ));
+      
+      // Initialize embedding provider
+      await this.embeddingProvider.initialize();
+      
+      this.initialized = true;
+      return true;
+    } catch (error) {
+      logger.error('Failed to initialize memory system', error);
+      return false;
+    }
+  }
+  
+  async storeData(key, data) {
+    this._ensureInitialized();
+    
+    // Store in filesystem
+    await this.storageAdapters.filesystem.storeData(key, data);
+    
+    // If suitable for vector storage, store with embedding
+    if (this._isVectorSuitable(data)) {
+      const embedding = await this.embeddingProvider.generateEmbedding(this._extractText(data));
+      await this.storageAdapters.vector.storeData(key, data, embedding);
+    }
+    
+    return true;
+  }
+  
+  async retrieveData(key) {
+    this._ensureInitialized();
+    
+    // Try vector database first if available
+    if (this.storageAdapters.vector.isAvailable()) {
+      try {
+        const data = await this.storageAdapters.vector.retrieveData(key);
+        if (data) return data;
+      } catch (error) {
+        logger.warn(`Vector retrieval failed for ${key}, falling back to filesystem`, error);
+      }
+    }
+    
+    // Fall back to filesystem
+    return this.storageAdapters.filesystem.retrieveData(key);
+  }
+  
+  async semanticSearch(query, options = {}) {
+    this._ensureInitialized();
+    
+    if (!this.storageAdapters.vector.isAvailable()) {
+      throw new Error('Vector database required for semantic search');
+    }
+    
+    const queryEmbedding = await this.embeddingProvider.generateEmbedding(query);
+    return this.storageAdapters.vector.semanticSearch(queryEmbedding, options);
+  }
+  
+  // Helper methods
+  _ensureInitialized() {
+    if (!this.initialized) {
+      throw new Error('Memory system not initialized');
+    }
+  }
+  
+  _isVectorSuitable(data) {
+    return typeof data === 'object' && 
+           (typeof data.content === 'string' || 
+            typeof data.text === 'string');
+  }
+  
+  _extractText(data) {
+    return data.content || data.text || JSON.stringify(data);
+  }
+}
+```
+
+#### RAG Engine Implementation
+
+The RAG Engine uses a pipeline architecture for processing:
+
+```javascript
+// RAG Engine core implementation (simplified)
+class RAGEngine {
+  constructor(config, memorySystem) {
+    this.config = config;
+    this.memorySystem = memorySystem;
+    this.contextProviders = new Map();
+    this.llmAdapter = createLLMAdapter(config.llm);
+    this.initialized = false;
+  }
+  
+  async initialize() {
+    try {
+      await this.llmAdapter.initialize();
+      
+      // Register default context providers
+      this.registerContextProvider('conversation', this._conversationContextProvider.bind(this));
+      this.registerContextProvider('topic', this._topicContextProvider.bind(this));
+      
+      this.initialized = true;
+      return true;
+    } catch (error) {
+      logger.error('Failed to initialize RAG engine', error);
+      return false;
+    }
+  }
+  
+  registerContextProvider(name, providerFunction) {
+    if (typeof providerFunction !== 'function') {
+      throw new Error(`Context provider must be a function, got ${typeof providerFunction}`);
+    }
+    this.contextProviders.set(name, providerFunction);
+  }
+  
+  async enhancePrompt(query, options = {}) {
+    this._ensureInitialized();
+    
+    // Extract relevant context
+    const context = await this.getContextForQuery(query, options);
+    
+    // Create enhanced prompt
+    const template = this.config.prompts.enhancedTemplate;
+    const enhancedPrompt = template
+      .replace('{context}', context)
+      .replace('{query}', query);
+    
+    return enhancedPrompt;
+  }
+  
+  async getContextForQuery(query, options = {}) {
+    this._ensureInitialized();
+    
+    const contexts = [];
+    const enabledProviders = options.providers || Array.from(this.contextProviders.keys());
+    
+    // Collect context from all enabled providers
+    for (const providerName of enabledProviders) {
+      const provider = this.contextProviders.get(providerName);
+      if (!provider) continue;
+      
+      try {
+        const contextResult = await provider(query, options);
+        if (contextResult) {
+          contexts.push({
+            source: providerName,
+            content: contextResult,
+            relevance: contextResult.relevance || 1.0
+          });
+        }
+      } catch (error) {
+        logger.warn(`Context provider ${providerName} failed`, error);
+      }
+    }
+    
+    // Sort by relevance and assemble context
+    contexts.sort((a, b) => b.relevance - a.relevance);
+    
+    let assembledContext = '';
+    let tokenCount = 0;
+    const maxTokens = options.maxContextTokens || this.config.context.maxContextLength;
+    
+    for (const ctx of contexts) {
+      const content = `[${ctx.source}]\n${ctx.content}\n\n`;
+      const tokenEstimate = this._estimateTokens(content);
+      
+      if (tokenCount + tokenEstimate <= maxTokens) {
+        assembledContext += content;
+        tokenCount += tokenEstimate;
+      } else {
+        break;
+      }
+    }
+    
+    return assembledContext;
+  }
+  
+  async processConversationWithRAG(messages, options = {}) {
+    this._ensureInitialized();
+    
+    // Extract the user's last message
+    const lastUserMessage = messages
+      .slice()
+      .reverse()
+      .find(m => m.role === 'user');
+    
+    if (!lastUserMessage) {
+      throw new Error('No user message found in conversation');
+    }
+    
+    // Create conversation history for context
+    const conversationHistory = messages
+      .map(m => `${m.role}: ${m.content}`)
+      .join('\n\n');
+    
+    // Get context for the query
+    const contextOptions = {
+      ...options,
+      conversationHistory
+    };
+    
+    const enhancedPrompt = await this.enhancePrompt(
+      lastUserMessage.content,
+      contextOptions
+    );
+    
+    // Process with LLM
+    return this.llmAdapter.complete(enhancedPrompt, options);
+  }
+  
+  async synthesizeKnowledge(topic, options = {}) {
+    this._ensureInitialized();
+    
+    // Get relevant context for the topic
+    const context = await this._getTopicContext(topic, options);
+    
+    // Create synthesis prompt
+    const template = this.config.prompts.synthesisTemplate;
+    const synthesisPrompt = template
+      .replace(/{topic}/g, topic)
+      .replace('{context}', context);
+    
+    // Generate synthesis with LLM
+    return this.llmAdapter.complete(synthesisPrompt, {
+      ...options,
+      temperature: 0.3,  // Lower temperature for factual content
+      maxTokens: 2000    // Allow longer response for comprehensive synthesis
+    });
+  }
+  
+  // Context provider implementations
+  async _conversationContextProvider(query, options) {
+    // Simplified implementation
+    const results = await this.memorySystem.semanticSearch(query, {
+      collection: 'messages',
+      limit: this.config.context.maxResults
+    });
+    
+    return results.map(r => {
+      const message = r.message || r;
+      return `${message.role}: ${message.content}`;
+    }).join('\n\n');
+  }
+  
+  async _topicContextProvider(query, options) {
+    // Simplified implementation
+    const results = await this.memorySystem.semanticSearch(query, {
+      collection: 'topics',
+      limit: 5
+    });
+    
+    return results.map(r => {
+      const topic = r.topic || r;
+      return `Topic: ${topic.name}\n${topic.content}`;
+    }).join('\n\n');
+  }
+  
+  // Helper methods
+  _ensureInitialized() {
+    if (!this.initialized) {
+      throw new Error('RAG engine not initialized');
+    }
+  }
+  
+  _estimateTokens(text) {
+    // Simple token estimator (4 chars ~= 1 token)
+    return Math.ceil(text.length / 4);
+  }
+  
+  async _getTopicContext(topic, options) {
+    // Get directly relevant topics
+    const directTopics = await this.memorySystem.semanticSearch(topic, {
+      collection: 'topics',
+      limit: 3
+    });
+    
+    // Get related conversations
+    const relatedConversations = await this.memorySystem.semanticSearch(topic, {
+      collection: 'conversations',
+      limit: 5
+    });
+    
+    // Combine contexts
+    let context = '';
+    
+    if (directTopics.length > 0) {
+      context += '## Relevant Topics\n\n';
+      context += directTopics.map(t => `Topic: ${t.name}\n${t.content}`).join('\n\n');
+    }
+    
+    if (relatedConversations.length > 0) {
+      context += '\n\n## Relevant Conversations\n\n';
+      context += relatedConversations.map(c => {
+        const messages = c.messages || [];
+        return messages
+          .filter(m => m.content && m.content.includes(topic))
+          .map(m => `${m.role}: ${m.content}`)
+          .join('\n');
+      }).join('\n\n');
+    }
+    
+    return context;
+  }
+}
+```
+
+#### API Server Implementation
+
+The API Server uses Express.js with a structured middleware and routing approach:
+
+```javascript
+// API Server core implementation (simplified)
+class ApiServer {
+  constructor(config, memorySystem, ragEngine) {
+    this.config = config;
+    this.memorySystem = memorySystem;
+    this.ragEngine = ragEngine;
+    this.app = express();
+    this.server = null;
+    this.initialized = false;
+  }
+  
+  async initialize() {
+    try {
+      // Configure middleware
+      this._setupMiddleware();
+      
+      // Configure routes
+      this._setupRoutes();
+      
+      // Configure error handling
+      this._setupErrorHandling();
+      
+      this.initialized = true;
+      return true;
+    } catch (error) {
+      logger.error('Failed to initialize API server', error);
+      return false;
+    }
+  }
+  
+  async start() {
+    this._ensureInitialized();
+    
+    return new Promise((resolve, reject) => {
+      try {
+        const port = this.config.port || 3000;
+        this.server = this.app.listen(port, () => {
+          logger.info(`API server listening on port ${port}`);
+          resolve(true);
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+  
+  async stop() {
+    if (this.server) {
+      return new Promise((resolve) => {
+        this.server.close(() => {
+          this.server = null;
+          resolve(true);
+        });
+      });
+    }
+    return true;
+  }
+  
+  // Private setup methods
+  _setupMiddleware() {
+    // Standard middleware
+    this.app.use(express.json());
+    this.app.use(cors(this.config.cors));
+    this.app.use(compression());
+    
+    // Request logging
+    this.app.use((req, res, next) => {
+      const start = Date.now();
+      
+      // Log on response finish
+      res.on('finish', () => {
+        const duration = Date.now() - start;
+        logger.info(
+          `${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`
+        );
+      });
+      
+      next();
+    });
+    
+    // Request ID assignment
+    this.app.use((req, res, next) => {
+      req.id = uuid();
+      res.setHeader('X-Request-ID', req.id);
+      next();
+    });
+  }
+  
+  _setupRoutes() {
+    // API version prefix
+    const apiPrefix = '/api';
+    
+    // Health check endpoint
+    this.app.get(`${apiPrefix}/health`, (req, res) => {
+      res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    });
+    
+    // Chat API routes
+    this.app.post(`${apiPrefix}/chat/message`, this._handleChatMessage.bind(this));
+    this.app.get(`${apiPrefix}/chat/conversation/:id`, this._handleGetConversation.bind(this));
+    this.app.post(`${apiPrefix}/chat/conversation/:id/save`, this._handleSaveConversation.bind(this));
+    
+    // Memory API routes
+    this.app.get(`${apiPrefix}/memory/search`, this._handleMemorySearch.bind(this));
+    this.app.get(`${apiPrefix}/memory/conversations`, this._handleListConversations.bind(this));
+    this.app.get(`${apiPrefix}/memory/topics`, this._handleListTopics.bind(this));
+    this.app.get(`${apiPrefix}/memory/topics/:id`, this._handleGetTopic.bind(this));
+    
+    // Knowledge API routes
+    this.app.post(`${apiPrefix}/knowledge/synthesize`, this._handleSynthesizeKnowledge.bind(this));
+    this.app.get(`${apiPrefix}/knowledge/graph`, this._handleGetKnowledgeGraph.bind(this));
+    this.app.get(`${apiPrefix}/knowledge/related/:id`, this._handleGetRelatedTopics.bind(this));
+  }
+  
+  _setupErrorHandling() {
+    // Not found handler
+    this.app.use((req, res, next) => {
+      res.status(404).json(this._createErrorResponse({
+        code: 'RESOURCE_NOT_FOUND',
+        message: 'The requested resource was not found',
+        statusCode: 404
+      }));
+    });
+    
+    // Error handler
+    this.app.use((err, req, res, next) => {
+      const statusCode = err.statusCode || 500;
+      
+      // Log server errors
+      if (statusCode === 500) {
+        logger.error('Server error', err);
+      }
+      
+      res.status(statusCode).json(this._createErrorResponse({
+        code: err.code || 'INTERNAL_SERVER_ERROR',
+        message: err.message || 'An unexpected error occurred',
+        details: err.details,
+        statusCode
+      }));
+    });
+  }
+  
+  // Route handlers
+  async _handleChatMessage(req, res, next) {
+    try {
+      const { message, conversation, options } = req.body;
+      
+      if (!message || !message.content) {
+        throw this._createError('INVALID_REQUEST', 'Message content is required', 400);
+      }
+      
+      // Create or update conversation
+      const messages = conversation?.messages || [];
+      messages.push(message);
+      
+      // Process with RAG
+      const ragResponse = await this.ragEngine.processConversationWithRAG(
+        messages,
+        options
+      );
+      
+      // Create assistant message
+      const assistantMessage = {
+        role: 'assistant',
+        content: ragResponse,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Update conversation with assistant response
+      messages.push(assistantMessage);
+      
+      // Return the updated conversation
+      res.json(this._createSuccessResponse({
+        message: assistantMessage,
+        conversation: {
+          id: conversation?.id || uuid(),
+          title: conversation?.title || this._generateTitle(messages),
+          messages
+        }
+      }));
+    } catch (error) {
+      next(error);
+    }
+  }
+  
+  // More route handlers...
+  
+  // Helper methods
+  _createSuccessResponse(data, meta = {}) {
+    return {
+      success: true,
+      data,
+      error: null,
+      meta: {
+        timestamp: new Date().toISOString(),
+        ...meta
+      }
+    };
+  }
+  
+  _createErrorResponse(error) {
+    return {
+      success: false,
+      data: null,
+      error,
+      meta: {
+        timestamp: new Date().toISOString()
+      }
+    };
+  }
+  
+  _createError(code, message, statusCode = 500, details = null) {
+    const error = new Error(message);
+    error.code = code;
+    error.statusCode = statusCode;
+    error.details = details;
+    return error;
+  }
+  
+  _ensureInitialized() {
+    if (!this.initialized) {
+      throw new Error('API server not initialized');
+    }
+  }
+  
+  _generateTitle(messages) {
+    // Simple title generation
+    const firstUserMessage = messages.find(m => m.role === 'user');
+    if (!firstUserMessage) return 'New Conversation';
+    
+    const content = firstUserMessage.content || '';
+    return content.length > 30
+      ? content.substring(0, 30) + '...'
+      : content;
+  }
+}
+```
+
+### Storage Implementations
+
+#### Filesystem Storage Adapter
+
+The Filesystem Storage Adapter provides persistent storage using the file system:
+
+```javascript
+// Filesystem Storage Adapter implementation (simplified)
+class FilesystemAdapter {
+  constructor(config) {
+    this.config = config;
+    this.basePath = config.basePath || './memory';
+    this.conversationDir = path.join(this.basePath, config.conversationDir || 'conversations');
+    this.topicDir = path.join(this.basePath, config.topicDir || 'topics');
+    this.initialized = false;
+  }
+  
+  async initialize() {
+    try {
+      // Ensure directories exist
+      await fs.mkdir(this.basePath, { recursive: true });
+      await fs.mkdir(this.conversationDir, { recursive: true });
+      await fs.mkdir(this.topicDir, { recursive: true });
+      
+      this.initialized = true;
+      return true;
+    } catch (error) {
+      logger.error('Failed to initialize filesystem adapter', error);
+      return false;
+    }
+  }
+  
+  async storeData(key, data) {
+    this._ensureInitialized();
+    
+    // Determine file path based on key
+    const filePath = this._getFilePathForKey(key);
+    
+    // Ensure parent directory exists
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
+    
+    // Write data to file
+    await fs.writeFile(
+      filePath,
+      JSON.stringify(data, null, 2),
+      'utf8'
+    );
+    
+    return true;
+  }
+  
+  async retrieveData(key) {
+    this._ensureInitialized();
+    
+    // Determine file path based on key
+    const filePath = this._getFilePathForKey(key);
+    
+    try {
+      // Check if file exists
+      await fs.access(filePath, fs.constants.R_OK);
+      
+      // Read and parse file
+      const fileContent = await fs.readFile(filePath, 'utf8');
+      return JSON.parse(fileContent);
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        // File doesn't exist
+        return null;
+      }
+      throw error;
+    }
+  }
+  
+  async listConversations() {
+    this._ensureInitialized();
+    
+    try {
+      const files = await fs.readdir(this.conversationDir);
+      
+      // Process each conversation file
+      const conversations = await Promise.all(
+        files
+          .filter(file => file.endsWith('.json'))
+          .map(async (file) => {
+            try {
+              const filePath = path.join(this.conversationDir, file);
+              const content = await fs.readFile(filePath, 'utf8');
+              return JSON.parse(content);
+            } catch (error) {
+              logger.warn(`Error reading conversation file ${file}`, error);
+              return null;
+            }
+          })
+      );
+      
+      // Filter out any errors and sort by updated timestamp
+      return conversations
+        .filter(Boolean)
+        .sort((a, b) => {
+          const dateA = new Date(a.updated || a.created || 0);
+          const dateB = new Date(b.updated || b.created || 0);
+          return dateB - dateA;  // Most recent first
+        });
+    } catch (error) {
+      logger.error('Error listing conversations', error);
+      return [];
+    }
+  }
+  
+  // Helper methods
+  _ensureInitialized() {
+    if (!this.initialized) {
+      throw new Error('Filesystem adapter not initialized');
+    }
+  }
+  
+  _getFilePathForKey(key) {
+    // Handle special key types
+    if (key.startsWith('conversation:')) {
+      const id = key.replace('conversation:', '');
+      return path.join(this.conversationDir, `${id}.json`);
+    } else if (key.startsWith('topic:')) {
+      const id = key.replace('topic:', '');
+      return path.join(this.topicDir, `${id}.json`);
+    } else {
+      // Generic key, store at base path
+      return path.join(this.basePath, `${key}.json`);
+    }
+  }
+}
+```
+
+#### Vector Database Adapter
+
+The Vector Database Adapter interfaces with Weaviate for semantic search:
+
+```javascript
+// Vector Database Adapter implementation (simplified)
+class VectorDatabaseAdapter {
+  constructor(config) {
+    this.config = config;
+    this.client = null;
+    this.available = false;
+    this.initialized = false;
+  }
+  
+  async initialize() {
+    try {
+      // Create Weaviate client
+      this.client = weaviate.client({
+        scheme: this.config.scheme || 'http',
+        host: this.config.url || 'localhost:8080',
+        apiKey: this.config.apiKey ? 
+          new weaviate.ApiKey(this.config.apiKey) : undefined,
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      // Test connection
+      const result = await this.client.schema.getter().do();
+      
+      this.available = true;
+      this.initialized = true;
+      
+      return true;
+    } catch (error) {
+      logger.warn('Vector database connection failed', error);
+      this.available = false;
+      this.initialized = true;  // Still mark as initialized to allow fallback
+      return false;
+    }
+  }
+  
+  isAvailable() {
+    return this.available;
+  }
+  
+  async storeData(key, data, embedding) {
+    this._ensureInitialized();
+    
+    if (!this.available) {
+      throw new Error('Vector database not available');
+    }
+    
+    // Determine class based on data type
+    const className = this._getClassForData(data);
+    
+    // Prepare object properties
+    const properties = {
+      ...data,
+      key,
+      _createdAt: new Date().toISOString(),
+      _updatedAt: new Date().toISOString()
+    };
+    
+    try {
+      // Store in Weaviate
+      const result = await this.client.data
+        .creator()
+        .withClassName(className)
+        .withProperties(properties)
+        .withVector(embedding)
+        .do();
+      
+      return true;
+    } catch (error) {
+      logger.error(`Error storing data in vector database for key ${key}`, error);
+      throw error;
+    }
+  }
+  
+  async retrieveData(key) {
+    this._ensureInitialized();
+    
+    if (!this.available) {
+      throw new Error('Vector database not available');
+    }
+    
+    try {
+      // Try each class type until we find the object
+      const classTypes = ['Conversation', 'Message', 'Topic'];
+      
+      for (const className of classTypes) {
+        const result = await this.client.graphql
+          .get()
+          .withClassName(className)
+          .withFields('*')
+          .withWhere({
+            operator: 'Equal',
+            path: ['key'],
+            valueString: key
+          })
+          .do();
+        
+        const objects = result?.data?.Get?.[className] || [];
+        
+        if (objects.length > 0) {
+          // Clean up Weaviate-specific properties
+          const { _additional, ...data } = objects[0];
+          return data;
+        }
+      }
+      
+      // No data found
+      return null;
+    } catch (error) {
+      logger.error(`Error retrieving data from vector database for key ${key}`, error);
+      throw error;
+    }
+  }
+  
+  async semanticSearch(queryEmbedding, options = {}) {
+    this._ensureInitialized();
+    
+    if (!this.available) {
+      throw new Error('Vector database not available');
+    }
+    
+    // Extract options
+    const {
+      collection = 'Message',
+      limit = 10,
+      threshold = 0.7
+    } = options;
+    
+    try {
+      // Perform semantic search
+      const result = await this.client.graphql
+        .get()
+        .withClassName(collection)
+        .withFields('*')
+        .withNearVector({
+          vector: queryEmbedding
+        })
+        .withLimit(limit)
+        .do();
+      
+      // Extract results and add relevance scores
+      const objects = result?.data?.Get?.[collection] || [];
+      
+      return objects.map(obj => {
+        const score = obj._additional?.certainty || 0;
+        const { _additional, ...data } = obj;
+        
+        // Only return results above threshold
+        if (score < threshold) return null;
+        
+        return {
+          ...data,
+          relevance: score
+        };
+      }).filter(Boolean);
+    } catch (error) {
+      logger.error('Error performing semantic search', error);
+      throw error;
+    }
+  }
+  
+  // Helper methods
+  _ensureInitialized() {
+    if (!this.initialized) {
+      throw new Error('Vector database adapter not initialized');
+    }
+  }
+  
+  _getClassForData(data) {
+    // Determine appropriate Weaviate class
+    if (data.messages) {
+      return 'Conversation';
+    } else if (data.role && data.content) {
+      return 'Message';
+    } else if (data.name && data.content) {
+      return 'Topic';
+    } else {
+      return 'Object';  // Generic class
+    }
+  }
+}
+```
+
+### Utility Implementations
+
+#### Embedding Provider
+
+The Embedding Provider generates vector embeddings for text content:
+
+```javascript
+// Embedding Provider factory and implementation (simplified)
+function createEmbeddingProvider(config) {
+  const provider = config.provider || 'openai';
+  
+  switch (provider.toLowerCase()) {
+    case 'openai':
+      return new OpenAIEmbeddingProvider(config);
+    case 'local':
+      return new LocalEmbeddingProvider(config);
+    case 'mock':
+      return new MockEmbeddingProvider(config);
+    default:
+      throw new Error(`Unknown embedding provider: ${provider}`);
+  }
+}
+
+class OpenAIEmbeddingProvider {
+  constructor(config) {
+    this.config = config;
+    this.apiKey = config.apiKey || process.env.OPENAI_API_KEY;
+    this.model = config.model || 'text-embedding-ada-002';
+    this.dimensions = config.dimensions || 1536;
+    this.client = null;
+    this.initialized = false;
+  }
+  
+  async initialize() {
+    try {
+      // Create OpenAI client
+      this.client = new OpenAI({
+        apiKey: this.apiKey
+      });
+      
+      this.initialized = true;
+      return true;
+    } catch (error) {
+      logger.error('Failed to initialize OpenAI embedding provider', error);
+      return false;
+    }
+  }
+  
+  async generateEmbedding(text) {
+    this._ensureInitialized();
+    
+    if (!text || typeof text !== 'string') {
+      throw new Error('Text must be a non-empty string');
+    }
+    
+    try {
+      // Generate embedding using OpenAI API
+      const response = await this.client.embeddings.create({
+        model: this.model,
+        input: text
+      });
+      
+      // Extract embedding vector
+      const embedding = response.data[0].embedding;
+      
+      return embedding;
+    } catch (error) {
+      logger.error('Error generating embedding with OpenAI', error);
+      throw error;
+    }
+  }
+  
+  // Helper methods
+  _ensureInitialized() {
+    if (!this.initialized) {
+      throw new Error('OpenAI embedding provider not initialized');
+    }
+  }
+}
+
+class MockEmbeddingProvider {
+  constructor(config) {
+    this.dimensions = config.dimensions || 1536;
+    this.initialized = true;
+  }
+  
+  async initialize() {
+    return true;
+  }
+  
+  async generateEmbedding(text) {
+    // Generate a deterministic but unique vector based on text content
+    const hash = this._simpleHash(text);
+    const vector = new Array(this.dimensions).fill(0);
+    
+    // Use hash to seed the vector
+    for (let i = 0; i < this.dimensions; i++) {
+      // Generate value between -1 and 1
+      vector[i] = (((hash + i) % 1000) / 500) - 1;
+    }
+    
+    // Normalize to unit length
+    const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
+    return vector.map(val => val / magnitude);
+  }
+  
+  // Helper method to generate simple hash
+  _simpleHash(text) {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      const char = text.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
+  }
+}
+```
+
+#### LLM Adapter
+
+The LLM Adapter interfaces with Claude or other LLMs:
+
+```javascript
+// LLM Adapter factory and implementation (simplified)
+function createLLMAdapter(config) {
+  const provider = config.provider || 'claude';
+  
+  switch (provider.toLowerCase()) {
+    case 'claude':
+      return new ClaudeLLMAdapter(config);
+    case 'mock':
+      return new MockLLMAdapter(config);
+    default:
+      throw new Error(`Unknown LLM provider: ${provider}`);
+  }
+}
+
+class ClaudeLLMAdapter {
+  constructor(config) {
+    this.config = config;
+    this.apiKey = config.apiKey || process.env.CLAUDE_API_KEY;
+    this.model = config.model || 'claude-2';
+    this.client = null;
+    this.initialized = false;
+  }
+  
+  async initialize() {
+    try {
+      // Create Claude client
+      this.client = new Claude({
+        apiKey: this.apiKey
+      });
+      
+      this.initialized = true;
+      return true;
+    } catch (error) {
+      logger.error('Failed to initialize Claude LLM adapter', error);
+      return false;
+    }
+  }
+  
+  async complete(prompt, options = {}) {
+    this._ensureInitialized();
+    
+    try {
+      // Set up completion options
+      const completionOptions = {
+        model: options.model || this.model,
+        temperature: options.temperature ?? this.config.temperature ?? 0.7,
+        max_tokens: options.maxTokens || this.config.maxTokens || 1500,
+        system: options.systemPrompt || this.config.systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      };
+      
+      // Call Claude API
+      const response = await this.client.complete(completionOptions);
+      
+      return response.content;
+    } catch (error) {
+      logger.error('Error generating completion with Claude', error);
+      throw error;
+    }
+  }
+  
+  // Helper methods
+  _ensureInitialized() {
+    if (!this.initialized) {
+      throw new Error('Claude LLM adapter not initialized');
+    }
+  }
+}
+
+class MockLLMAdapter {
+  constructor(config) {
+    this.initialized = true;
+  }
+  
+  async initialize() {
+    return true;
+  }
+  
+  async complete(prompt, options = {}) {
+    // Simple mock response
+    return `This is a mock response to: "${prompt.substring(0, 100)}..."`;
+  }
+}
+```
+
+### Front-end Implementations
+
+#### Chat Interface JavaScript
+
+The Chat Interface JavaScript manages the user interaction and API communication:
+
+```javascript
+// Chat Interface implementation (simplified)
+class ChatInterface {
+  constructor(config) {
+    this.config = config;
+    this.apiClient = new MagiApiClient(config.apiUrl);
+    this.conversation = {
+      id: null,
+      messages: []
+    };
+    this.contextVisible = config.showContext || false;
+    this.initialized = false;
+    
+    // DOM references
+    this.elements = {
+      container: document.getElementById('chat-container'),
+      messageList: document.getElementById('message-list'),
+      inputForm: document.getElementById('message-form'),
+      messageInput: document.getElementById('message-input'),
+      sendButton: document.getElementById('send-button'),
+      contextPanel: document.getElementById('context-panel'),
+      contextToggle: document.getElementById('context-toggle'),
+      loadingIndicator: document.getElementById('loading-indicator')
+    };
+  }
+  
+  initialize() {
+    if (!this.elements.container) {
+      throw new Error('Chat container element not found');
+    }
+    
+    // Set up event listeners
+    this.elements.inputForm.addEventListener('submit', this.handleSubmit.bind(this));
+    this.elements.contextToggle.addEventListener('click', this.toggleContext.bind(this));
+    
+    // Initialize UI state
+    this.updateContextVisibility();
+    
+    this.initialized = true;
+    return true;
+  }
+  
+  async handleSubmit(event) {
+    event.preventDefault();
+    
+    const messageText = this.elements.messageInput.value.trim();
+    if (!messageText) return;
+    
+    // Clear input
+    this.elements.messageInput.value = '';
+    
+    // Show loading state
+    this.setLoading(true);
+    
+    try {
+      // Add user message to UI
+      const userMessage = {
+        role: 'user',
+        content: messageText,
+        timestamp: new Date().toISOString()
+      };
+      
+      this.addMessageToUI(userMessage);
+      
+      // Send to API
+      const response = await this.apiClient.sendMessage({
+        message: userMessage,
+        conversation: this.conversation,
+        options: {
+          showContext: this.contextVisible
+        }
+      });
+      
+      // Update conversation
+      this.conversation = response.data.conversation;
+      
+      // Add assistant message to UI
+      this.addMessageToUI(response.data.message);
+      
+      // Update context panel if available
+      if (response.data.context && this.contextVisible) {
+        this.updateContextPanel(response.data.context);
+      }
+    } catch (error) {
+      console.error('Error sending message', error);
+      this.showError('Failed to send message. Please try again.');
+    } finally {
+      this.setLoading(false);
+    }
+  }
+  
+  addMessageToUI(message) {
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message', message.role);
+    
+    const contentElement = document.createElement('div');
+    contentElement.classList.add('message-content');
+    contentElement.textContent = message.content;
+    
+    const metaElement = document.createElement('div');
+    metaElement.classList.add('message-meta');
+    
+    const timeElement = document.createElement('span');
+    timeElement.classList.add('message-time');
+    timeElement.textContent = this.formatTime(message.timestamp);
+    
+    metaElement.appendChild(timeElement);
+    messageElement.appendChild(contentElement);
+    messageElement.appendChild(metaElement);
+    
+    this.elements.messageList.appendChild(messageElement);
+    
+    // Scroll to bottom
+    this.elements.messageList.scrollTop = this.elements.messageList.scrollHeight;
+  }
+  
+  updateContextPanel(context) {
+    if (!this.elements.contextPanel) return;
+    
+    this.elements.contextPanel.innerHTML = '';
+    
+    if (typeof context === 'string') {
+      const contentElement = document.createElement('div');
+      contentElement.classList.add('context-content');
+      contentElement.textContent = context;
+      this.elements.contextPanel.appendChild(contentElement);
+    } else if (Array.isArray(context)) {
+      // Handle context items
+      context.forEach(item => {
+        const itemElement = document.createElement('div');
+        itemElement.classList.add('context-item');
+        
+        if (item.title) {
+          const titleElement = document.createElement('div');
+          titleElement.classList.add('context-title');
+          titleElement.textContent = item.title;
+          itemElement.appendChild(titleElement);
+        }
+        
+        const contentElement = document.createElement('div');
+        contentElement.classList.add('context-content');
+        contentElement.textContent = item.content;
+        itemElement.appendChild(contentElement);
+        
+        if (item.source) {
+          const sourceElement = document.createElement('div');
+          sourceElement.classList.add('context-source');
+          sourceElement.textContent = `Source: ${item.source}`;
+          itemElement.appendChild(sourceElement);
+        }
+        
+        this.elements.contextPanel.appendChild(itemElement);
+      });
+    }
+  }
+  
+  toggleContext() {
+    this.contextVisible = !this.contextVisible;
+    this.updateContextVisibility();
+  }
+  
+  updateContextVisibility() {
+    if (this.contextVisible) {
+      this.elements.contextPanel.classList.remove('hidden');
+      this.elements.contextToggle.textContent = 'Hide Context';
+    } else {
+      this.elements.contextPanel.classList.add('hidden');
+      this.elements.contextToggle.textContent = 'Show Context';
+    }
+  }
+  
+  setLoading(isLoading) {
+    if (isLoading) {
+      this.elements.loadingIndicator.classList.remove('hidden');
+      this.elements.sendButton.disabled = true;
+    } else {
+      this.elements.loadingIndicator.classList.add('hidden');
+      this.elements.sendButton.disabled = false;
+    }
+  }
+  
+  showError(message) {
+    const errorElement = document.createElement('div');
+    errorElement.classList.add('error-message');
+    errorElement.textContent = message;
+    
+    this.elements.messageList.appendChild(errorElement);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      errorElement.remove();
+    }, 5000);
+  }
+  
+  formatTime(timestamp) {
+    if (!timestamp) return '';
+    
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+}
+```
+
+### MAGI v2 Implementations
+
+#### CryptoBot Market Module
+
+The CryptoBot Market Module implements cryptocurrency price data collection:
+
+```javascript
+// CryptoBot Market Module key algorithm implementations
+
+// Market data collection with retry logic
+async function makeApiRequest(provider, endpoint, params = {}, attempts = 0) {
+  if (attempts >= API_RETRY_ATTEMPTS) {
+    logger.error(`Maximum retry attempts reached for ${provider} ${endpoint}`);
+    throw new Error(`Maximum retry attempts reached for ${provider} ${endpoint}`);
+  }
+  
+  try {
+    const url = this.baseUrls[provider] + endpoint;
+    
+    // Set up authentication header if needed
+    const headers = {};
+    if (this.apiKeys[provider]) {
+      if (provider === 'coinGecko') {
+        headers['x-cg-pro-api-key'] = this.apiKeys.coinGecko;
+      } else if (provider === 'coinMarketCap') {
+        headers['X-CMC_PRO_API_KEY'] = this.apiKeys.coinMarketCap;
+      }
+    }
+    
+    // Make the request
+    const response = await axios.get(url, {
+      params,
+      headers,
+      timeout: 10000 // 10 second timeout
+    });
+    
+    return response;
+  } catch (error) {
+    logger.warn(`API request failed (attempt ${attempts + 1}): ${provider} ${endpoint}`, error.message);
+    
+    // Check if we should retry (based on error type)
+    if (error.response && error.response.status === 429) {
+      // Rate limit error - wait longer
+      await new Promise(resolve => setTimeout(resolve, API_RETRY_DELAY * 2));
+    } else {
+      // Standard delay
+      await new Promise(resolve => setTimeout(resolve, API_RETRY_DELAY));
+    }
+    
+    // Retry the request
+    return makeApiRequest(provider, endpoint, params, attempts + 1);
+  }
+}
+
+// Batch storage algorithm with concurrency control
+async function storeBatchCryptoData(cryptoDataArray) {
+  try {
+    // Process in batches to avoid overwhelming the memory system
+    const batchSize = 10;
+    const batches = [];
+    
+    for (let i = 0; i < cryptoDataArray.length; i += batchSize) {
+      batches.push(cryptoDataArray.slice(i, i + batchSize));
+    }
+    
+    for (const batch of batches) {
+      const storagePromises = batch.map(data => {
+        return this.storeMarketData(`price:${data.symbol}`, data);
+      });
+      
+      await Promise.all(storagePromises);
+    }
+    
+    return true;
+  } catch (error) {
+    logger.error('Failed to store batch crypto data:', error);
+    return false;
+  }
+}
+
+// Time range filtering algorithm
+function filterTimeRange(data, startTime, endTime) {
+  if (!data || !Array.isArray(data)) return [];
+  
+  return data.filter(item => {
+    const timestamp = new Date(item.timestamp).getTime();
+    
+    if (startTime && endTime) {
+      return timestamp >= new Date(startTime).getTime() && 
+             timestamp <= new Date(endTime).getTime();
+    } else if (startTime) {
+      return timestamp >= new Date(startTime).getTime();
+    } else if (endTime) {
+      return timestamp <= new Date(endTime).getTime();
+    }
+    
+    return true;
+  });
+}
+
+// Weighted sentiment calculation algorithm
+function calculateWeightedSentiment(sources, weights) {
+  // Ensure we have valid data
+  if (sources.length !== weights.length) {
+    throw new Error('Sources and weights arrays must be the same length');
+  }
+  
+  let weightedScore = 0;
+  let totalVolume = 0;
+  const combinedTopics = {};
+  
+  // Normalize weights to sum to 1
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  const normalizedWeights = weights.map(weight => weight / totalWeight);
+  
+  // Calculate weighted score and add up volumes
+  for (let i = 0; i < sources.length; i++) {
+    const source = sources[i];
+    const weight = normalizedWeights[i];
+    
+    if (source && source.volume > 0) {
+      weightedScore += source.score * weight;
+      totalVolume += source.volume;
+      
+      // Combine topics
+      if (source.topics) {
+        Object.entries(source.topics).forEach(([topic, value]) => {
+          if (!combinedTopics[topic]) {
+            combinedTopics[topic] = 0;
+          }
+          combinedTopics[topic] += value;
+        });
+      }
+    }
+  }
+  
+  // Sort topics by frequency
+  const sortedTopics = Object.entries(combinedTopics)
+    .sort(([, a], [, b]) => b - a)
+    .reduce((obj, [key, value]) => {
+      obj[key] = value;
+      return obj;
+    }, {});
+  
+  return {
+    score: weightedScore,
+    volume: totalVolume,
+    topics: sortedTopics
+  };
+}
+```
+
+#### Web Interface React Implementation (MAGI v2)
+
+The MAGI v2 React implementation shows the modernized component approach:
+
+```jsx
+// Modern React component for the Chat Interface
+import React, { useState, useEffect, useRef } from 'react';
+import { MagiApiClient } from '../api/client';
+import { Message } from '../components/Message';
+import { ContextPanel } from '../components/ContextPanel';
+import { useTheme } from '../hooks/useTheme';
+import '../styles/Chat.css';
+
+export const ChatInterface = ({ apiUrl, initialConversation = null }) => {
+  const [conversation, setConversation] = useState(initialConversation || {
+    id: null,
+    messages: []
+  });
+  
+  const [messageInput, setMessageInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showContext, setShowContext] = useState(false);
+  const [contextData, setContextData] = useState(null);
+  const [error, setError] = useState(null);
+  
+  const messageListRef = useRef(null);
+  const apiClient = useRef(new MagiApiClient(apiUrl));
+  const { theme } = useTheme();
+  
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messageListRef.current) {
+      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+    }
+  }, [conversation.messages]);
+  
+  // Clear error after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const trimmedInput = messageInput.trim();
+    if (!trimmedInput) return;
+    
+    setMessageInput('');
+    setIsLoading(true);
+    
+    try {
+      // Create user message
+      const userMessage = {
+        role: 'user',
+        content: trimmedInput,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Update local state immediately for responsive UI
+      setConversation(prev => ({
+        ...prev,
+        messages: [...prev.messages, userMessage]
+      }));
+      
+      // Send to API
+      const response = await apiClient.current.sendMessage({
+        message: userMessage,
+        conversation,
+        options: {
+          showContext
+        }
+      });
+      
+      // Update conversation with server response
+      setConversation(response.data.conversation);
+      
+      // Update context if available
+      if (response.data.context) {
+        setContextData(response.data.context);
+      }
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError('Failed to send message. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const toggleContext = () => {
+    setShowContext(prev => !prev);
+  };
+  
+  return (
+    <div className={`chat-interface ${theme}`}>
+      {error && (
+        <div className="error-notification">
+          {error}
+        </div>
+      )}
+      
+      <div className="chat-container">
+        <div className="message-container">
+          <div className="message-list" ref={messageListRef}>
+            {conversation.messages.map((message, index) => (
+              <Message 
+                key={index} 
+                message={message} 
+              />
+            ))}
+            
+            {isLoading && (
+              <div className="loading-indicator">
+                <div className="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <form className="message-input-form" onSubmit={handleSubmit}>
+            <textarea
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              placeholder="Type your message..."
+              disabled={isLoading}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+            />
+            <button 
+              type="submit" 
+              disabled={isLoading || !messageInput.trim()}
+            >
+              Send
+            </button>
+          </form>
+        </div>
+        
+        {showContext && (
+          <ContextPanel context={contextData} />
+        )}
+      </div>
+      
+      <div className="chat-controls">
+        <button onClick={toggleContext}>
+          {showContext ? 'Hide Context' : 'Show Context'}
+        </button>
+        
+        <button onClick={() => {
+          if (conversation.id) {
+            apiClient.current.saveConversation(conversation.id);
+          }
+        }}>
+          Save to Memory
+        </button>
+      </div>
+    </div>
+  );
+};
+```
+
+## Data Flow & Processing
+
+This section details the key data flows and processing pipelines within the MAGI system.
+
+### Conversational Data Flow
+
+The flow of conversational data through the system follows these steps:
+
+1. **User Input Reception**:
+   - User submits a message through the chat interface
+   - Message is validated and formatted
+   - Timestamp and metadata are added
+
+2. **Context Retrieval**:
+   - User query is processed for semantic search
+   - Vector embedding is generated
+   - Memory system is queried for relevant context
+   - Results are ranked by relevance score
+   - Top results are selected within token limits
+
+3. **Prompt Enhancement**:
+   - Context is formatted according to template
+   - User query is combined with context
+   - Prompt template is applied
+
+4. **LLM Processing**:
+   - Enhanced prompt is sent to Claude
+   - Generation parameters are applied
+   - Response is streamed back when available
+
+5. **Response Processing**:
+   - Assistant message is created
+   - Message is added to conversation
+   - UI is updated with response
+   - Optional storage in memory system
+
+6. **Knowledge Extraction** (if saving to memory):
+   - Conversation is analyzed for topics
+   - Topics are extracted and synthesized
+   - Knowledge graph is updated
+   - Relationships are established
+
+### Search Processing Flow
+
+The semantic search flow involves these steps:
+
+1. **Query Processing**:
+   - User submits search query
+   - Query is normalized and expanded
+   - Vector embedding is generated
+
+2. **Vector Search**:
+   - Weaviate vector database is queried
+   - Nearest neighbors algorithm finds similar vectors
+   - Results above similarity threshold are selected
+
+3. **Result Ranking**:
+   - Results are ranked by similarity score
+   - Source diversity is considered
+   - Recency may be factored in
+   - Top N results are selected
+
+4. **Result Formatting**:
+   - Results are categorized by type
+   - Context snippets are extracted
+   - Sources are attributed
+   - Results are presented to user
+
+### Knowledge Synthesis Process
+
+The process of synthesizing knowledge follows these steps:
+
+1. **Topic Identification**:
+   - Potential topics extracted from conversation
+   - Topic relevance is evaluated
+   - Similar existing topics are identified
+
+2. **Context Gathering**:
+   - Relevant conversations are collected
+   - Related topics are identified
+   - External knowledge if available
+
+3. **Synthesis Prompt Creation**:
+   - Collected context is formatted
+   - Synthesis template is applied
+   - Parameters are set for factual output
+
+4. **Content Generation**:
+   - Prompt is processed by Claude
+   - Structured document is generated
+   - Key points are highlighted
+   - Sources are attributed
+
+5. **Integration with Knowledge Graph**:
+   - New topic is added to knowledge graph
+   - Relationships with existing topics are established
+   - Strength of relationships is calculated
+   - Graph is updated
+
+### Memory Storage Process
+
+The process for storing data in the memory system:
+
+1. **Data Preparation**:
+   - Data is validated against schema
+   - Required fields are ensured
+   - Timestamps are added or updated
+   - IDs are generated if needed
+
+2. **Filesystem Storage**:
+   - JSON serialization is performed
+   - Appropriate directory is selected
+   - File is written to disk
+   - Backup may be created
+
+3. **Vector Database Storage**:
+   - Text is extracted for embedding
+   - Vector embedding is generated
+   - Data class is determined
+   - Object is stored with vector
+
+4. **Knowledge Graph Update** (if applicable):
+   - Graph node is created or updated
+   - Relationships are calculated
+   - Edges are created or modified
+   - Graph metadata is updated
+
+### API Request Processing
+
+The flow of API requests through the system:
+
+1. **Request Reception**:
+   - HTTP request is received
+   - Basic validation is performed
+   - Authentication and authorization if required
+   - Request is logged
+
+2. **Routing**:
+   - Endpoint is matched to route
+   - Parameters are extracted
+   - Controller method is selected
+
+3. **Business Logic**:
+   - Controller processes request
+   - Core components are invoked
+   - Results are prepared
+
+4. **Response Formatting**:
+   - Standard response structure is applied
+   - Success or error status is determined
+   - Metadata is added
+   - Response is sent to client
+
+## API Specifications
+
+This section provides detailed specifications for the MAGI API endpoints.
+
+### Authentication
+
+The API uses a simple API key authentication mechanism:
+
+```
+Authorization: Bearer API_KEY
+```
+
+### Base URL
+
+```
+http://localhost:3000/api
+```
+
+### Endpoints
+
+#### Chat API
+
+**Send Message**
+
+- **URL**: `/chat/message`
+- **Method**: `POST`
+- **Description**: Sends a message and receives a response
+- **Request Body**:
+  ```json
+  {
+    "message": {
+      "role": "user",
+      "content": "What is RAG?",
+      "timestamp": "2023-09-15T12:34:56Z"
+    },
+    "conversation": {
+      "id": "conv-123",
+      "messages": [/* previous messages */]
+    },
+    "options": {
+      "showContext": true,
+      "temperature": 0.7
+    }
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "message": {
+        "role": "assistant",
+        "content": "RAG stands for Retrieval Augmented Generation...",
+        "timestamp": "2023-09-15T12:35:10Z"
+      },
+      "conversation": {
+        "id": "conv-123",
+        "title": "What is RAG?",
+        "messages": [/* all messages including new ones */]
+      },
+      "context": [
+        {
+          "title": "RAG Overview",
+          "content": "Retrieval Augmented Generation (RAG) is a technique...",
+          "source": "Topic: Retrieval Augmented Generation"
+        }
+      ]
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2023-09-15T12:35:10Z",
+      "requestId": "req-456",
+      "processingTime": 1254
+    }
+  }
+  ```
+
+**Get Conversation**
+
+- **URL**: `/chat/conversation/:id`
+- **Method**: `GET`
+- **Description**: Retrieves a specific conversation
+- **URL Parameters**: `id` - The conversation ID
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": "conv-123",
+      "title": "What is RAG?",
+      "created": "2023-09-15T12:34:56Z",
+      "updated": "2023-09-15T12:35:10Z",
+      "messages": [
+        {
+          "role": "user",
+          "content": "What is RAG?",
+          "timestamp": "2023-09-15T12:34:56Z"
+        },
+        {
+          "role": "assistant",
+          "content": "RAG stands for Retrieval Augmented Generation...",
+          "timestamp": "2023-09-15T12:35:10Z"
+        }
+      ]
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2023-09-15T12:40:22Z"
+    }
+  }
+  ```
+
+**Save Conversation**
+
+- **URL**: `/chat/conversation/:id/save`
+- **Method**: `POST`
+- **Description**: Saves a conversation to memory
+- **URL Parameters**: `id` - The conversation ID
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": "conv-123",
+      "saved": true,
+      "topics": [
+        {
+          "id": "topic-456",
+          "name": "Retrieval Augmented Generation",
+          "created": true
+        }
+      ]
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2023-09-15T12:42:18Z"
+    }
+  }
+  ```
+
+#### Memory API
+
+**Search Memory**
+
+- **URL**: `/memory/search`
+- **Method**: `GET`
+- **Description**: Searches across memory
+- **Query Parameters**:
+  - `q` - Search query
+  - `limit` - Maximum results (default: 10)
+  - `types` - Result types (default: "all")
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "query": "retrieval augmented generation",
+      "results": [
+        {
+          "type": "topic",
+          "id": "topic-456",
+          "title": "Retrieval Augmented Generation",
+          "content": "RAG is a technique that enhances...",
+          "relevance": 0.92
+        },
+        {
+          "type": "message",
+          "id": "msg-789",
+          "conversation": "conv-123",
+          "content": "RAG stands for Retrieval Augmented Generation...",
+          "role": "assistant",
+          "timestamp": "2023-09-15T12:35:10Z",
+          "relevance": 0.89
+        }
+      ],
+      "total": 2
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2023-09-15T13:22:45Z"
+    }
+  }
+  ```
+
+**List Conversations**
+
+- **URL**: `/memory/conversations`
+- **Method**: `GET`
+- **Description**: Lists saved conversations
+- **Query Parameters**:
+  - `limit` - Maximum results (default: 20)
+  - `offset` - Result offset for pagination
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "conversations": [
+        {
+          "id": "conv-123",
+          "title": "What is RAG?",
+          "created": "2023-09-15T12:34:56Z",
+          "updated": "2023-09-15T12:35:10Z",
+          "messageCount": 2
+        }
+      ],
+      "total": 1
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2023-09-15T13:30:12Z",
+      "pagination": {
+        "limit": 20,
+        "offset": 0,
+        "total": 1
+      }
+    }
+  }
+  ```
+
+**List Topics**
+
+- **URL**: `/memory/topics`
+- **Method**: `GET`
+- **Description**: Lists knowledge topics
+- **Query Parameters**:
+  - `limit` - Maximum results (default: 20)
+  - `offset` - Result offset for pagination
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "topics": [
+        {
+          "id": "topic-456",
+          "name": "Retrieval Augmented Generation",
+          "description": "A technique that combines retrieval and generation",
+          "created": "2023-09-15T12:42:18Z",
+          "updated": "2023-09-15T12:42:18Z"
+        }
+      ],
+      "total": 1
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2023-09-15T13:35:22Z",
+      "pagination": {
+        "limit": 20,
+        "offset": 0,
+        "total": 1
+      }
+    }
+  }
+  ```
+
+**Get Topic**
+
+- **URL**: `/memory/topics/:id`
+- **Method**: `GET`
+- **Description**: Gets a specific topic
+- **URL Parameters**: `id` - The topic ID
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": "topic-456",
+      "name": "Retrieval Augmented Generation",
+      "description": "A technique that combines retrieval and generation",
+      "content": "Retrieval Augmented Generation (RAG) is a technique...",
+      "created": "2023-09-15T12:42:18Z",
+      "updated": "2023-09-15T12:42:18Z",
+      "sources": [
+        {
+          "type": "conversation",
+          "id": "conv-123",
+          "excerpt": "What is RAG?"
+        }
+      ],
+      "related": [
+        {
+          "id": "topic-789",
+          "name": "Vector Databases",
+          "strength": 0.75,
+          "type": "related"
+        }
+      ]
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2023-09-15T13:40:18Z"
+    }
+  }
+  ```
+
+#### Knowledge API
+
+**Synthesize Knowledge**
+
+- **URL**: `/knowledge/synthesize`
+- **Method**: `POST`
+- **Description**: Synthesizes knowledge on a topic
+- **Request Body**:
+  ```json
+  {
+    "topic": "Retrieval Augmented Generation",
+    "options": {
+      "maxLength": 1000,
+      "includeSources": true
+    }
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "topic": {
+        "id": "topic-456",
+        "name": "Retrieval Augmented Generation",
+        "content": "Retrieval Augmented Generation (RAG) is a technique...",
+        "created": "2023-09-15T12:42:18Z",
+        "updated": "2023-09-15T14:22:10Z"
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2023-09-15T14:22:10Z",
+      "processingTime": 12540
+    }
+  }
+  ```
+
+**Get Knowledge Graph**
+
+- **URL**: `/knowledge/graph`
+- **Method**: `GET`
+- **Description**: Gets the knowledge graph
+- **Query Parameters**:
+  - `limit` - Maximum nodes (default: 100)
+  - `center` - Center node ID (optional)
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "nodes": [
+        {
+          "id": "topic-456",
+          "name": "Retrieval Augmented Generation",
+          "type": "topic"
+        },
+        {
+          "id": "topic-789",
+          "name": "Vector Databases",
+          "type": "topic"
+        }
+      ],
+      "edges": [
+        {
+          "source": "topic-456",
+          "target": "topic-789",
+          "weight": 0.75,
+          "type": "related"
+        }
+      ],
+      "metadata": {
+        "nodeCount": 2,
+        "edgeCount": 1
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2023-09-15T14:30:12Z"
+    }
+  }
+  ```
+
+**Get Related Topics**
+
+- **URL**: `/knowledge/related/:id`
+- **Method**: `GET`
+- **Description**: Gets topics related to a specific topic
+- **URL Parameters**: `id` - The topic ID
+- **Query Parameters**:
+  - `limit` - Maximum results (default: 10)
+  - `minStrength` - Minimum relationship strength (default: 0.5)
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "topic": {
+        "id": "topic-456",
+        "name": "Retrieval Augmented Generation"
+      },
+      "related": [
+        {
+          "id": "topic-789",
+          "name": "Vector Databases",
+          "description": "Databases optimized for vector similarity search",
+          "strength": 0.75,
+          "type": "related"
+        }
+      ]
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2023-09-15T14:35:22Z"
+    }
+  }
+  ```
+
+#### System API
+
+**System Status**
+
+- **URL**: `/system/status`
+- **Method**: `GET`
+- **Description**: Gets the system status
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "status": "healthy",
+      "version": "1.0.0",
+      "components": {
+        "api": "healthy",
+        "memory": "healthy",
+        "vector": "healthy"
+      },
+      "uptime": 86400,
+      "metrics": {
+        "memoryUsage": "240MB",
+        "conversations": 42,
+        "topics": 156
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2023-09-15T14:40:22Z"
+    }
+  }
+  ```
+
+**System Configuration**
+
+- **URL**: `/system/config`
+- **Method**: `GET`
+- **Description**: Gets public system configuration
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "version": "1.0.0",
+      "features": {
+        "knowledgeSynthesis": true,
+        "semanticSearch": true,
+        "contextVisualization": true
+      },
+      "limits": {
+        "maxContextLength": 3000,
+        "maxConversationLength": 100,
+        "maxSearchResults": 20
+      }
+    },
+    "error": null,
+    "meta": {
+      "timestamp": "2023-09-15T14:45:18Z"
+    }
+  }
+  ```
+
+## Integration Points
+
+This section details the integration points between MAGI components and external systems.
+
+### Claude Code Integration
+
+The MAGI system integrates with Claude Code through:
+
+1. **Command-line Interface**:
+   - Shell scripts for launching Claude Code
+   - Parameter passing for context and prompts
+   - Response capture and processing
+
+2. **Structured Prompts**:
+   - Carefully designed templates
+   - Context inclusion with proper formatting
+   - Parameter adjustment based on task
+
+3. **Response Handling**:
+   - Parsing of Claude Code responses
+   - Error handling for failed completions
+   - Response formatting for client applications
+
+### Ghost CMS Integration
+
+Integration with Ghost CMS involves:
+
+1. **Script Embedding**:
+   - Script tags for the MAGI chat interface
+   - Configuration variables for customization
+   - Style sheets for visual integration
+
+2. **API Communication**:
+   - CORS configuration for cross-origin requests
+   - API endpoints for Ghost integration
+   - Authentication for secure communication
+
+3. **UI Customization**:
+   - Theme-aware styling
+   - Responsive design for different devices
+   - Custom UI components for Ghost
+
+### External API Integrations
+
+Integration with external APIs includes:
+
+1. **OpenAI API**:
+   - Authentication with API keys
+   - Request formatting for embeddings
+   - Response handling and error management
+
+2. **Weaviate API**:
+   - GraphQL queries for vector search
+   - Schema management
+   - Object storage with vectors
+
+3. **CryptoBot External APIs**:
+   - CoinGecko for market data
+   - Twitter/Discord for social media
+   - News APIs for content aggregation
+
+### File System Integration
+
+The system integrates with the file system through:
+
+1. **Data Storage**:
+   - JSON serialization of structures
+   - Directory organization by data type
+   - File naming conventions
+
+2. **Backup Management**:
+   - Scheduled backups of critical data
+   - Version tracking for files
+   - Restore capabilities
+
+3. **Import/Export**:
+   - Data format conversion
+   - Batch processing of files
+   - Migration utilities
+
+## Testing Framework
+
+This section details the testing approach and framework used for MAGI.
+
+### Testing Strategy
+
+The MAGI testing strategy involves:
+
+1. **Unit Testing**:
+   - Individual component testing
+   - Function-level validation
+   - Mocking of dependencies
+
+2. **Integration Testing**:
+   - Component interaction testing
+   - API endpoint validation
+   - Database operation verification
+
+3. **End-to-End Testing**:
+   - Complete workflow validation
+   - User interface testing
+   - Cross-component scenario testing
+
+### Test Implementation
+
+Tests are implemented using:
+
+1. **Jest Framework**:
+   - Test suite organization
+   - Assertion library
+   - Mocking capabilities
+
+2. **Test Structure**:
+   - `describe` blocks for component grouping
+   - `it`/`test` blocks for individual tests
+   - Setup and teardown with `beforeEach`/`afterEach`
+
+3. **Test Coverage**:
+   - Statement coverage targets (80%+)
+   - Branch coverage for complex logic
+   - Path coverage for critical flows
+
+### Mock System
+
+The testing framework uses mocks for:
+
+1. **External APIs**:
+   - Mock responses for OpenAI, Claude
+   - Simulated latency and errors
+   - Stateful mock behavior
+
+2. **Database**:
+   - In-memory vector database
+   - Mock file system
+   - Test fixtures for data
+
+3. **Time-Based Functions**:
+   - Mock timers for scheduling
+   - Time manipulation for testing
+   - Event sequence control
+
+### Example Test Cases
+
+```javascript
+// Memory System Unit Test
+describe('Memory System', () => {
+  let memorySystem;
+  
+  beforeEach(() => {
+    // Initialize with test configuration
+    memorySystem = new MemorySystem({
+      filesystem: { basePath: './test-memory' },
+      vectorDb: { mock: true }
+    });
+    return memorySystem.initialize();
+  });
+  
+  afterEach(() => {
+    // Clean up test data
+    return cleanupTestMemory('./test-memory');
+  });
+  
+  it('should store and retrieve data', async () => {
+    // Test data
+    const key = 'test-key';
+    const data = { foo: 'bar' };
+    
+    // Store data
+    await memorySystem.storeData(key, data);
+    
+    // Retrieve data
+    const retrieved = await memorySystem.retrieveData(key);
+    
+    // Verify
+    expect(retrieved).toEqual(data);
+  });
+  
+  it('should handle missing data gracefully', async () => {
+    const result = await memorySystem.retrieveData('non-existent-key');
+    expect(result).toBeNull();
+  });
+  
+  // More tests...
+});
+
+// API Integration Test
+describe('Chat API', () => {
+  let app;
+  let server;
+  
+  beforeAll(() => {
+    // Setup test server
+    const { app: testApp, server: testServer } = setupTestServer();
+    app = testApp;
+    server = testServer;
+  });
+  
+  afterAll(() => {
+    // Close test server
+    return server.close();
+  });
+  
+  it('should handle chat messages', async () => {
+    // Test message
+    const message = {
+      role: 'user',
+      content: 'Hello, world',
+      timestamp: new Date().toISOString()
+    };
+    
+    // Send request
+    const response = await request(app)
+      .post('/api/chat/message')
+      .send({ message });
+    
+    // Verify response
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.message).toBeDefined();
+    expect(response.body.data.message.role).toBe('assistant');
+  });
+  
+  // More tests...
+});
+```
+
+## Deployment & Configuration
+
+This section details the deployment options and configuration for the MAGI system.
+
+### Deployment Options
+
+MAGI can be deployed in several ways:
+
+1. **Local Development**:
+   - Running on local machine
+   - Docker for Weaviate
+   - Node.js for API server
+
+2. **Server Deployment**:
+   - Node.js server on VPS or dedicated hardware
+   - Docker Compose for service orchestration
+   - Nginx as reverse proxy
+
+3. **Cloud Deployment**:
+   - Container orchestration (Kubernetes)
+   - Managed database services
+   - Cloud provider integration
+
+### Configuration System
+
+The configuration system uses:
+
+1. **Environment Variables**:
+   - API keys and secrets
+   - Service endpoints
+   - Environment-specific settings
+
+2. **Configuration Files**:
+   - Default settings in `config.js`
+   - Environment-specific overrides
+   - Local overrides for development
+
+3. **Runtime Configuration**:
+   - Settings that can be changed without restart
+   - User preferences
+   - Feature flags
+
+### Environment Setup
+
+To set up a development environment:
+
+```bash
+# Clone repository
+git clone https://github.com/username/magi.git
+cd magi
+
+# Install dependencies
+npm install
+
+# Set up environment
+cp .env.example .env
+# Edit .env with appropriate settings
+
+# Start Weaviate
+docker-compose up -d
+
+# Initialize database
+node setup-weaviate.js
+
+# Start development server
+npm run dev
+```
+
+### Docker Deployment
+
+For Docker-based deployment:
+
+```yaml
+# docker-compose.yml
+version: '3'
+services:
+  weaviate:
+    image: semitechnologies/weaviate:1.19.6
+    ports:
+      - "8080:8080"
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'none'
+      CLUSTER_HOSTNAME: 'node1'
+    volumes:
+      - ./weaviate-data:/var/lib/weaviate
+    
+  magi-api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      WEAVIATE_URL: http://weaviate:8080
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      - weaviate
+    volumes:
+      - ./memory:/app/memory
+```
+
+### Configuration Variables
+
+Key configuration variables include:
+
+```javascript
+{
+  // API server configuration
+  server: {
+    port: 3000,
+    host: 'localhost',
+    cors: {
+      origin: ['http://localhost:3000', 'https://your-site.com'],
+      methods: ['GET', 'POST']
+    }
+  },
+  
+  // Vector database configuration
+  vectorDb: {
+    url: 'http://localhost:8080',
+    scheme: 'http',
+    apiKey: null
+  },
+  
+  // Embedding configuration
+  embedding: {
+    provider: 'openai',
+    apiKey: process.env.OPENAI_API_KEY,
+    model: 'text-embedding-ada-002'
+  },
+  
+  // LLM configuration
+  llm: {
+    provider: 'claude',
+    apiKey: process.env.CLAUDE_API_KEY,
+    temperature: 0.7
+  },
+  
+  // Memory system configuration
+  memory: {
+    basePath: './memory',
+    conversationDir: 'conversations',
+    topicDir: 'topics'
+  }
+}
+```
+
+## Future Development
+
+This section outlines the future development roadmap for the MAGI system.
+
+### MAGI v2 Roadmap
+
+The MAGI v2 development includes:
+
+1. **Code Reorganization**:
+   - Improved modularity and abstraction
+   - Clear separation of concerns
+   - Better code documentation
+   - Enhanced maintainability
+
+2. **Feature Enhancements**:
+   - Enhanced RAG capabilities
+   - Multi-model support (beyond Claude)
+   - Advanced visualization
+   - Mobile-friendly interface
+
+3. **New Modules**:
+   - CryptoBot integration
+   - Document processing
+   - Multi-agent orchestration
+   - User management
+
+### CryptoBot Integration
+
+The CryptoBot module will add:
+
+1. **Market Data Analysis**:
+   - Real-time cryptocurrency price tracking
+   - Historical data analysis
+   - Pattern detection
+   - Alert system
+
+2. **Sentiment Analysis**:
+   - Social media monitoring
+   - Sentiment scoring
+   - Topic extraction
+   - Correlation with price movements
+
+3. **UI Components**:
+   - Price charts
+   - Sentiment visualization
+   - News integration
+   - Alert dashboard
+
+### Technical Debt Reduction
+
+Areas for technical debt reduction:
+
+1. **Testing Coverage**:
+   - Increase unit test coverage
+   - Add integration tests
+   - Implement end-to-end testing
+   - Performance benchmarking
+
+2. **Error Handling**:
+   - More robust error management
+   - Better user feedback
+   - Logging enhancements
+   - Monitoring improvements
+
+3. **Code Quality**:
+   - Code style standardization
+   - Performance optimizations
+   - Memory usage improvements
+   - Security enhancements
+
+### Advanced Features
+
+Future advanced features include:
+
+1. **Multi-Agent System**:
+   - Specialized agents for different tasks
+   - Agent orchestration
+   - Agent communication
+   - Task routing
+
+2. **Advanced Knowledge Management**:
+   - Hierarchical knowledge organization
+   - Knowledge versioning
+   - Conflict resolution
+   - Source attribution
+
+3. **User Personalization**:
+   - User profiles and preferences
+   - Personalized context
+   - Learning from interactions
+   - Custom knowledge bases
+
+4. **Extended Integration**:
+   - Additional LLM support
+   - Document processing (PDF, Word, etc.)
+   - Calendar and task integration
+   - Additional CMS platforms
+```
